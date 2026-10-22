@@ -6,7 +6,14 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
-import { parseSidebar, parseMarkdown, toNetscapeHTML, extensionsFolder } from '../src/convert.js'
+import {
+  parseSidebar,
+  parseMarkdown,
+  toNetscapeHTML,
+  extensionsFolder,
+  barLayout,
+  withoutLive,
+} from '../src/convert.js'
 
 const HELP = `
 arc-to-chrome — move your Arc spaces into the right Chrome profiles
@@ -26,6 +33,7 @@ Options:
   --open               Open Chrome's import page in each target profile (macOS)
   --no-unpinned        Skip open (unpinned / "Today") tabs
   --no-extensions      Skip the "Arc extensions" reinstall folder
+  --include-live       Keep live folders (e.g. GitHub pull requests); skipped by default
   -h, --help           Show this help
 `
 
@@ -41,6 +49,7 @@ function parseArgs(argv) {
     else if (a === '--open') opts.open = true
     else if (a === '--no-unpinned') opts.unpinned = false
     else if (a === '--no-extensions') opts.extensions = false
+    else if (a === '--include-live') opts.live = true
     else throw new Error(`Unknown option: ${a}`)
   }
   return opts
@@ -202,7 +211,7 @@ function main() {
 
   const written = []
   for (const g of groups.values()) {
-    const nodes = g.spaces.map(s => s.root)
+    const nodes = barLayout(g.spaces.map(s => (opts.live ? s.root : withoutLive(s.root))))
     if (opts.extensions && arcUserData) {
       const exts = new Map()
       for (const dir of g.arcDirs) for (const e of readExtensions(path.join(arcUserData, dir))) exts.set(e.id, e)

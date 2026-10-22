@@ -103,3 +103,17 @@ test('parseChromeLocalState accepts just the profile section', async () => {
   const profiles = parseChromeLocalState({ profiles_order: ['Default'], info_cache: { Default: { name: 'Personal' } } })
   assert.deepEqual(profiles.map(p => p.name), ['Personal'])
 })
+
+test('live folders are detected and the layout is flat', async () => {
+  const { parseMarkdown, withoutLive, barLayout } = await import('../src/convert.js')
+  const { spaces } = parseMarkdown([
+    '# Work', '## Favorites', '- https://linear.app',
+    '## Pull Requests', '- https://github.com/a/b/pull/1', '- https://github.com/a/b/pull/2',
+    '## Docs', '- https://github.com/a/b', '# Side', '- https://example.com',
+  ].join('\n'))
+  const [work, side] = spaces.map(s => s.root)
+  assert.equal(work.children.find(c => c.title === 'Pull Requests').live, true)
+  assert.equal(work.children.find(c => c.title === 'Docs').live, undefined)
+  const layout = barLayout([withoutLive(work), side])
+  assert.deepEqual(layout.map(n => n.title), ['linear.app', 'Docs', 'Side'])
+})

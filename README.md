@@ -39,10 +39,10 @@ Want to see it first? The site has a **Try it with sample data** button.
 
 | In Arc | In Chrome |
 | --- | --- |
-| Spaces | One bookmark folder per space, in the Chrome profile you pick |
-| Favorites | A `Favorites` folder inside the space |
+| Spaces | Sent to the Chrome profile you pick. The first space lands flat on the bookmarks bar; extra spaces become folders |
+| Favorites | Bookmarks right on the bar |
 | Pinned tabs and folders | Bookmarks and folders, with the same nesting |
-| Live folders (e.g. GitHub PRs) | Their current links, as a regular folder |
+| Live folders (e.g. GitHub PRs) | Left out by default, since Arc refills them itself (tick them in the preview to keep a snapshot) |
 | Renamed tabs | Your custom names, if you also drop `StorableSidebar.json` (see below) |
 | Extensions | A folder of Chrome Web Store links to reinstall them (command line only) |
 
@@ -56,6 +56,10 @@ Arc's Markdown export only contains URLs, so bookmarks get readable names genera
 `chrome://password-manager/settings`, then delete the CSV.
 
 Not carried over: history, Boosts, Easels and Notes.
+
+**Why an "Imported" folder?** Chrome puts imports straight onto the bookmarks bar only when the bar is
+empty. If it already has bookmarks, Chrome wraps the import in one "Imported" folder; you can drag
+the contents out.
 
 ## Command line
 
@@ -81,6 +85,7 @@ Arc space            →  Chrome profile
 | `--out <dir>` | Output folder (default `./arc-export`) |
 | `--no-unpinned` | Skip open, unpinned ("Today") tabs |
 | `--no-extensions` | Skip the extensions folder |
+| `--include-live` | Keep live folders such as GitHub pull requests |
 
 ## Privacy
 

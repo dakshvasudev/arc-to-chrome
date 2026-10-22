@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
 
 import { BookmarkTree } from "@/components/bookmark-tree"
@@ -12,11 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   SKIP,
+  applyExclusions,
   bookmarksHTML,
   classify,
   defaultAssignment,
   download,
   fileName,
+  liveFolderPaths,
   loadArc,
   loadChromeProfiles,
   placeholderProfile,
@@ -79,6 +81,7 @@ export default function App() {
   const [downloaded, setDownloaded] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [sourceName, setSourceName] = useState("")
+  const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const replaceInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -90,8 +93,10 @@ export default function App() {
     if (!arc.md && !arc.sidebar) return
     try {
       const next = loadArc(arc.md, arc.sidebar, includeUnpinned)
+      const live = liveFolderPaths(next.spaces)
       setLoaded(next)
-      setAssign(defaultAssignment(next.spaces, profiles))
+      setExcluded(live)
+      setAssign(defaultAssignment(applyExclusions(next.spaces, live), profiles))
       setError("")
     } catch (e) {
       setError((e as Error).message)
@@ -101,7 +106,7 @@ export default function App() {
 
   function useProfiles(next: Profile[]) {
     setProfiles(next)
-    if (loaded) setAssign(defaultAssignment(loaded.spaces, next))
+    if (loaded) setAssign(defaultAssignment(applyExclusions(loaded.spaces, excluded), next))
   }
 
   // The whole page is a drop target: a near-miss shouldn't make the browser open the file instead.
@@ -193,7 +198,8 @@ export default function App() {
     setTimeout(() => document.getElementById("routing")?.scrollIntoView({ behavior: "smooth" }), 50)
   }
 
-  const spacesFor = (id: string) => loaded?.spaces.filter(s => assign[s.key] === id) ?? []
+  const exported = useMemo(() => (loaded ? applyExclusions(loaded.spaces, excluded) : []), [loaded, excluded])
+  const spacesFor = (id: string) => exported.filter(s => assign[s.key] === id)
   const linksFor = (id: string) => spacesFor(id).reduce((n, s) => n + s.links, 0)
   const realProfiles = profiles.some(p => p.real)
 
@@ -273,6 +279,27 @@ export default function App() {
             </>
           )}
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          {loaded && (
+            <div className="mt-5">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3">
+                <h3 className="font-medium">What's in it</h3>
+                <p className="text-xs text-muted-foreground">
+                  Untick a folder to leave it out.{excluded.size > 0 && ` ${plural(excluded.size, "folder")} left out, including live folders, which Arc refills by itself.`}
+                </p>
+              </div>
+              <BookmarkTree
+                key={loaded.spaces.map(s => s.title).join("|") + loaded.stats.links}
+                spaces={loaded.spaces}
+                excluded={excluded}
+                onToggleExcluded={path => setExcluded(prev => {
+                  const next = new Set(prev)
+                  if (next.has(path)) next.delete(path)
+                  else next.add(path)
+                  return next
+                })}
+              />
+            </div>
+          )}
           <details className="mt-3 text-sm text-muted-foreground">
             <summary className="cursor-pointer select-none hover:text-foreground">Optional: keep the exact names you gave tabs</summary>
             <div className="mt-2 space-y-2 pl-4">
@@ -320,7 +347,7 @@ export default function App() {
 
             <Step n={3} title="Send each space to a profile">
               <ul className="divide-y">
-                {loaded.spaces.map(s => (
+                {exported.map(s => (
                   <li key={s.key} className="flex items-center gap-3 py-2.5">
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{s.title}</div>
@@ -385,10 +412,6 @@ export default function App() {
               )}
             </Step>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Preview</CardTitle></CardHeader>
-              <CardContent><BookmarkTree key={loaded.spaces.map(s => s.title).join("|") + loaded.stats.links} spaces={loaded.spaces} /></CardContent>
-            </Card>
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { ChevronRight, Folder, PanelLeft, Search, Star } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
@@ -46,7 +47,14 @@ function initialOpen(spaces: Space[]) {
   return open
 }
 
-export function BookmarkTree({ spaces }: { spaces: Space[] }) {
+type Props = {
+  spaces: Space[]
+  /** Folder paths left out of the export. */
+  excluded: Set<string>
+  onToggleExcluded: (path: string) => void
+}
+
+export function BookmarkTree({ spaces, excluded, onToggleExcluded }: Props) {
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(() => initialOpen(spaces))
   const q = query.trim().toLowerCase()
@@ -98,16 +106,28 @@ export function BookmarkTree({ spaces }: { spaces: Space[] }) {
           }
           const isOpen = q ? true : open.has(path)
           const Icon = n.title === "Favorites" ? Star : Folder
+          const off = excluded.has(path)
           return (
             <li key={path}>
               <Collapsible open={isOpen} onOpenChange={v => toggle(path, v)}>
-                <CollapsibleTrigger className={cn(row, "w-full text-left")}>
-                  <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
-                  <Icon className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{n.title}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{countLinks(n)}</span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>{renderNodes(n.children, path, depth + 1)}</CollapsibleContent>
+                <div className={cn(row, "gap-1.5 py-0 pl-0")}>
+                  <input
+                    type="checkbox"
+                    checked={!off}
+                    onChange={() => onToggleExcluded(path)}
+                    aria-label={`${off ? "Include" : "Exclude"} ${n.title}`}
+                    title={off ? "Not imported. Tick to include." : "Untick to leave this folder out"}
+                    className="ml-1 size-4 shrink-0 cursor-pointer accent-primary"
+                  />
+                  <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left">
+                    <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className={cn("min-w-0 flex-1 truncate", off && "text-muted-foreground line-through")}>{n.title}</span>
+                    {n.live && <Badge variant="outline" className="shrink-0 text-[0.7rem]">Live folder</Badge>}
+                    <span className="text-xs text-muted-foreground tabular-nums">{countLinks(n)}</span>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent className={cn(off && "opacity-50")}>{renderNodes(n.children, path, depth + 1)}</CollapsibleContent>
               </Collapsible>
             </li>
           )

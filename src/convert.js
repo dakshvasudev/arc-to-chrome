@@ -94,7 +94,10 @@ export function parseSidebar(sidebarJson, opts = {}) {
         out.push(link(itemTitle(item), tab.savedURL))
         stats.links++
       } else if (item.data?.list) {
-        out.push(folder(item.title || 'Folder', convertChildren(item.childrenIds, seen)))
+        const f = folder(item.title || 'Folder', convertChildren(item.childrenIds, seen))
+        // Live folders (GitHub PRs, feeds…) refill themselves in Arc; their links are a stale snapshot.
+        if (item.data.list.automaticLiveFolderData) f.live = true
+        out.push(f)
         stats.folders++
       } else {
         // Split views, easels, etc.: keep whatever tabs they hold, flattened.
@@ -188,12 +191,47 @@ export function parseMarkdown(md) {
     stats.links++
   }
 
+  markLikelyLive(top)
   const spaces = top.children.map(root =>
     root.type === 'folder'
       ? { title: root.title, profileDir: 'Default', profileName: 'Default', root }
       : { title: 'Links', profileDir: 'Default', profileName: 'Default', root: folder('Links', [root]) },
   )
   return { spaces, stats }
+}
+
+// Arc's Markdown export doesn't say which folders are live. A folder holding nothing but
+// GitHub pull request / issue links is almost certainly one of Arc's GitHub live folders.
+const GITHUB_ITEM = /^https:\/\/github\.com\/[^/]+\/[^/]+\/(pull|issues)\/\d+/
+function markLikelyLive(node) {
+  if (node.type !== 'folder') return
+  node.children.forEach(markLikelyLive)
+  if (node.children.length && node.children.every(c => c.type === 'link' && GITHUB_ITEM.test(c.url))) node.live = true
+}
+
+/** Copy of a tree without the folders `drop` rejects. */
+export function prune(node, drop) {
+  if (node.type !== 'folder') return node
+  return { ...node, children: node.children.filter(c => !drop(c)).map(c => prune(c, drop)) }
+}
+
+export const withoutLive = node => prune(node, n => n.type === 'folder' && n.live)
+
+/**
+ * Lay spaces out the way Chrome's importer works best. Chrome puts the file's top level
+ * straight onto an empty bookmarks bar (or into one "Imported" folder if the bar has
+ * bookmarks), so the first space's Favorites become bar links and its folders sit next
+ * to them; any further spaces become folders of their own.
+ */
+export function barLayout(spaceRoots) {
+  const [first, ...rest] = spaceRoots
+  if (!first) return []
+  const top = []
+  for (const c of first.children) {
+    if (c.type === 'folder' && c.title === 'Favorites') top.push(...c.children)
+    else top.push(c)
+  }
+  return [...top, ...rest]
 }
 
 const esc = s =>

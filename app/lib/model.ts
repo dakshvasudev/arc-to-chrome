@@ -1,4 +1,5 @@
 import {
+  barLayout,
   matchProfile,
   parseChromeLocalState,
   parseMarkdown,
@@ -7,7 +8,7 @@ import {
 } from "../../src/convert.js"
 
 export type LinkNode = { type: "link"; title: string; url: string }
-export type FolderNode = { type: "folder"; title: string; children: TreeNode[] }
+export type FolderNode = { type: "folder"; title: string; children: TreeNode[]; live?: boolean }
 export type TreeNode = LinkNode | FolderNode
 
 export type Space = {
@@ -99,7 +100,36 @@ export function defaultAssignment(spaces: Space[], profiles: Profile[]): Record<
 }
 
 export function bookmarksHTML(spaces: Space[]): string {
-  return toNetscapeHTML(spaces.map(s => s.root))
+  return toNetscapeHTML(barLayout(spaces.map(s => s.root)))
+}
+
+/** Folder paths ("s0/2/1") of live folders, which start out excluded. */
+export function liveFolderPaths(spaces: Space[]): Set<string> {
+  const out = new Set<string>()
+  const walk = (nodes: TreeNode[], prefix: string) =>
+    nodes.forEach((n, i) => {
+      if (n.type !== "folder") return
+      if (n.live) out.add(`${prefix}/${i}`)
+      walk(n.children, `${prefix}/${i}`)
+    })
+  spaces.forEach(s => walk(s.root.children, s.key))
+  return out
+}
+
+/** The spaces as they will be exported: excluded folders removed, link counts updated. */
+export function applyExclusions(spaces: Space[], excluded: Set<string>): Space[] {
+  const prune = (node: FolderNode, path: string): FolderNode => ({
+    ...node,
+    children: node.children.flatMap((c, i): TreeNode[] => {
+      const p = `${path}/${i}`
+      if (c.type === "link") return [c]
+      return excluded.has(p) ? [] : [prune(c, p)]
+    }),
+  })
+  return spaces.map(s => {
+    const root = prune(s.root, s.key)
+    return { ...s, root, links: countLinks(root) }
+  })
 }
 
 export const fileName = (name: string) =>
