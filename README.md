@@ -26,8 +26,10 @@ your folders, nesting and Favorites intact.
 
 1. In Arc, open **Settings → Advanced → Export data**. Arc saves `Arc Data Export.md`.
 2. Drop it on **[arc-to-chrome.vercel.app](https://arc-to-chrome.vercel.app)**. Click **Use my real
-   Chrome profiles** to see your actual profiles (names, colours, work badges), and spaces with
-   matching names are routed automatically. Change any of them with one click.
+   Chrome profiles**, copy the one-line command, run it in Terminal and press ⌘V back on the page.
+   Your actual profiles appear (names, colours, work badges), and spaces with matching names are
+   routed automatically. The command only reads Chrome's profile list, using tools built into macOS
+   and Windows.
 3. Download each file and, in that Chrome profile, open `chrome://settings/importData` and choose
    **Bookmarks HTML file**.
 

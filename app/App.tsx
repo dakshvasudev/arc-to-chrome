@@ -161,6 +161,17 @@ export default function App() {
     }
   }
 
+  function onChromeText(text: string) {
+    try {
+      if (classify(text) !== "chrome") return false
+      useProfiles(loadChromeProfiles(text))
+      setChromeError("")
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function onChromeFiles(files: File[]) {
     try {
       const read = await readFiles(files)
@@ -288,7 +299,7 @@ export default function App() {
                 description={realProfiles
                   ? "Loaded from your Chrome. Spaces with matching names are routed automatically."
                   : "Add one card per Chrome profile you use, or load your real ones."}
-                action={<ChromeProfilesDialog onFiles={onChromeFiles} error={chromeError} />}
+                action={<ChromeProfilesDialog onFiles={onChromeFiles} onText={onChromeText} error={chromeError} />}
               >
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {profiles.map(p => (

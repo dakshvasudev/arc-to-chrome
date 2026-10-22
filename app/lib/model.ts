@@ -60,7 +60,7 @@ export function classify(text: string): DroppedFile["kind"] {
   const t = text.trimStart()
   if (!t.startsWith("{")) return "arc-md"
   const json = JSON.parse(t)
-  if (json?.profile?.info_cache) return "chrome"
+  if (json?.profile?.info_cache || json?.info_cache) return "chrome"
   if (json?.sidebar?.containers) return "arc-sidebar"
   throw new Error("That JSON file isn't Arc's StorableSidebar.json or Chrome's Local State.")
 }
@@ -79,7 +79,7 @@ export function loadArc(md: string | null, sidebar: string | null, includeUnpinn
 }
 
 export function loadChromeProfiles(text: string): Profile[] {
-  return parseChromeLocalState(JSON.parse(text)).map(
+  return parseChromeLocalState(JSON.parse(text.trim())).map(
     (p: { name: string; account: string; color: string | null; managed: boolean }, i: number) => ({
       id: crypto.randomUUID(),
       name: p.name,

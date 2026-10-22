@@ -257,9 +257,11 @@ const argbToHex = n =>
  * @returns {Array<{dir, name, account, email, color, managed}>}
  */
 export function parseChromeLocalState(localState) {
-  const cache = localState?.profile?.info_cache
+  // Accept the whole file, or just its "profile" section (what the copy command produces).
+  const section = localState?.profile ?? localState
+  const cache = section?.info_cache
   if (!cache) throw new Error('Not a Chrome "Local State" file (no profiles found)')
-  const order = localState.profile.profiles_order ?? []
+  const order = section.profiles_order ?? []
   const dirs = [...order.filter(d => d in cache), ...Object.keys(cache).filter(d => !order.includes(d))]
   return dirs.map(dir => {
     const p = cache[dir]

@@ -97,3 +97,9 @@ test('parseChromeLocalState reads names, colours and order', async () => {
   assert.equal(matchProfile({ title: 'personal', profileName: 'Default' }, profiles).name, 'Personal')
   assert.equal(matchProfile({ title: 'Side project', profileName: 'Default' }, profiles).name, 'Work')
 })
+
+test('parseChromeLocalState accepts just the profile section', async () => {
+  const { parseChromeLocalState } = await import('../src/convert.js')
+  const profiles = parseChromeLocalState({ profiles_order: ['Default'], info_cache: { Default: { name: 'Personal' } } })
+  assert.deepEqual(profiles.map(p => p.name), ['Personal'])
+})
