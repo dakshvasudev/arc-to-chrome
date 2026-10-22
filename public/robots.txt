@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://arc-to-chrome.vercel.app/sitemap.xml

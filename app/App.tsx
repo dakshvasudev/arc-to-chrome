@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowRight, CircleCheck, ClipboardPaste, ShieldCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
+import { ArrowRight, ChevronDown, CircleCheck, ClipboardPaste, ShieldCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
 
 import { BookmarkTree } from "@/components/bookmark-tree"
 import { ChromeProfilesDialog } from "@/components/chrome-profiles-dialog"
@@ -28,6 +28,7 @@ import {
   type Loaded,
   type Profile,
 } from "@/lib/model"
+import { FAQ } from "@/lib/faq"
 import { cn } from "@/lib/utils"
 
 const REPO = "https://github.com/dakshvasudev/arc-to-chrome"
@@ -271,7 +272,7 @@ export default function App() {
       )}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Arc <ArrowRight className="size-7 text-muted-foreground sm:size-8" /> Chrome
+          Arc <ArrowRight aria-hidden className="size-7 text-muted-foreground sm:size-8" /><span className="sr-only">to</span> Chrome
         </h1>
         <StarButton size="lg" />
       </header>
@@ -498,6 +499,21 @@ export default function App() {
           <KeyRound className="mt-0.5 size-4 shrink-0" />
           <span>Passwords: export them from <CopyText text="arc://settings/passwords" /> as CSV, import at <CopyText text="chrome://password-manager/settings" />, then delete the CSV.</span>
         </p>
+      </section>
+
+      <section className="mt-12" aria-labelledby="faq">
+        <h2 id="faq" className="text-base font-semibold">Questions</h2>
+        <div className="mt-3 divide-y rounded-xl border bg-card">
+          {FAQ.map(({ q, a }) => (
+            <details key={q} className="group px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium select-none [&::-webkit-details-marker]:hidden">
+                <h3 className="text-sm">{q}</h3>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-2 text-sm text-muted-foreground">{a}</p>
+            </details>
+          ))}
+        </div>
       </section>
 
       <footer className="mt-12 space-y-1 border-t pt-6 text-sm text-muted-foreground">

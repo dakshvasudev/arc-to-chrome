@@ -4,3 +4,4 @@ arc-export/
 .DS_Store
 .vercel
 .tmp-*
+dist-ssr/

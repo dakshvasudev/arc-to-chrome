@@ -3,26 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arc to Chrome</title>
-    <meta name="description" content="Move every Arc space into the right Chrome profile, with folders, pinned tabs and favorites intact. Free, open source, runs in your browser." />
+    <title>Arc to Chrome: Export Arc Spaces, Bookmarks &amp; Favorites to Chrome</title>
+    <meta name="description" content="Move from Arc to Chrome in a minute. Export your Arc spaces, pinned tabs, favorites and folders, with tab names and icons, into the right Chrome profile. Free, open source, private." />
     <meta name="author" content="Daksh Vasudev" />
+    <meta name="robots" content="index, follow" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0a0a0a" />
     <link rel="canonical" href="https://arc-to-chrome.vercel.app/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Arc to Chrome" />
     <meta property="og:url" content="https://arc-to-chrome.vercel.app/" />
     <meta property="og:title" content="Arc → Chrome: move your Arc spaces into Chrome" />
-    <meta property="og:description" content="Move every Arc space into the right Chrome profile, with folders, pinned tabs and favorites intact. Free, open source, runs in your browser." />
+    <meta property="og:description" content="Export your Arc spaces, pinned tabs, favorites and folders into the right Chrome profile, with tab names and icons. Free, open source, runs in your browser." />
     <meta property="og:image" content="https://arc-to-chrome.vercel.app/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Arc to Chrome: send each Arc space to a Chrome profile" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Arc → Chrome: move your Arc spaces into Chrome" />
-    <meta name="twitter:description" content="Move every Arc space into the right Chrome profile, with folders, pinned tabs and favorites intact. Free, open source, runs in your browser." />
+    <meta name="twitter:description" content="Export your Arc spaces, pinned tabs, favorites and folders into the right Chrome profile, with tab names and icons." />
     <meta name="twitter:image" content="https://arc-to-chrome.vercel.app/og.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Arc to Chrome",
+        "url": "https://arc-to-chrome.vercel.app/",
+        "description": "Export Arc browser spaces, pinned tabs, favorites and folders, with tab names and icons, into bookmark files for the right Chrome profiles.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "macOS, Windows",
+        "browserRequirements": "Requires a modern browser with JavaScript",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "isAccessibleForFree": true,
+        "author": { "@type": "Person", "name": "Daksh Vasudev", "url": "https://github.com/dakshvasudev" },
+        "codeRepository": "https://github.com/dakshvasudev/arc-to-chrome",
+        "license": "https://opensource.org/licenses/MIT"
+      }
+    </script>
+    <!--faq-ld-->
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--app-html--></div>
     <script type="module" src="/app/main.tsx"></script>
   </body>
 </html>
