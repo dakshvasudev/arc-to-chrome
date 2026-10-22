@@ -338,7 +338,7 @@ export default function App() {
                   <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
                     <ShieldCheck className="size-4 shrink-0" />
                     <span>
-                      Read-only and open source (<a href="/copy.pl" target="_blank" rel="noopener" className="underline underline-offset-2">see what it does</a>).
+                      Read-only and open source (<a href={`${REPO}/blob/main/public/copy.pl`} target="_blank" rel="noopener" className="underline underline-offset-2">see what it does</a>).
                       It changes nothing and sends nothing anywhere; your data only goes to your clipboard and this page.
                     </span>
                   </p>
