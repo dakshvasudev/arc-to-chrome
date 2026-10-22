@@ -37,6 +37,19 @@ function savedProfiles(): Profile[] {
   return [placeholderProfile(0)]
 }
 
+function StarButton({ size = "default" }: { size?: "default" | "lg" }) {
+  return (
+    <a
+      href={REPO}
+      target="_blank"
+      rel="noopener"
+      className={cn(buttonVariants({ size }), "gap-2 font-semibold shadow-sm", size === "lg" && "h-10 px-4 text-base")}
+    >
+      <Star className="fill-yellow-400 text-yellow-400" /> Star on GitHub
+    </a>
+  )
+}
+
 function Step({ n, title, description, action, children }: {
   n: number; title: string; description?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode
 }) {
@@ -63,6 +76,7 @@ export default function App() {
   const [assign, setAssign] = useState<Record<string, string>>({})
   const [error, setError] = useState("")
   const [chromeError, setChromeError] = useState("")
+  const [downloaded, setDownloaded] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)) } catch {}
@@ -151,9 +165,7 @@ export default function App() {
         <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight sm:text-4xl">
           Arc <ArrowRight className="size-7 text-muted-foreground sm:size-8" /> Chrome
         </h1>
-        <a href={REPO} target="_blank" rel="noopener" className={buttonVariants({ variant: "outline" })}>
-          <Star /> Star on GitHub
-        </a>
+        <StarButton size="lg" />
       </header>
       <p className="mt-3 max-w-2xl text-pretty text-muted-foreground">
         Move your Arc spaces, pinned tabs, folders and favorites into Chrome, and send each space to the right
@@ -277,7 +289,7 @@ export default function App() {
                           {spaces.length ? `${spaces.map(s => s.title).join(", ")} · ${plural(linksFor(p.id), "link")}` : "No spaces assigned"}
                         </div>
                       </div>
-                      <Button disabled={!spaces.length} onClick={() => download(fileName(p.name), bookmarksHTML(spaces))}>
+                      <Button disabled={!spaces.length} onClick={() => { download(fileName(p.name), bookmarksHTML(spaces)); setDownloaded(true) }}>
                         <Download /> Download
                       </Button>
                     </div>
@@ -289,6 +301,16 @@ export default function App() {
                 <li>Go to <CopyText text="chrome://settings/importData" /></li>
                 <li>Choose <span className="font-medium text-foreground">Bookmarks HTML file</span> → <span className="font-medium text-foreground">Choose file</span> → pick that profile's file.</li>
               </ol>
+              {downloaded && (
+                <div className="mt-5 flex flex-wrap items-center gap-4 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4">
+                  <Star className="size-8 shrink-0 fill-yellow-400 text-yellow-500" />
+                  <div className="min-w-0 flex-1 basis-56">
+                    <div className="font-semibold">Did this save you an evening?</div>
+                    <div className="text-sm text-muted-foreground">A star on GitHub helps other Arc users find it. It takes one click.</div>
+                  </div>
+                  <StarButton />
+                </div>
+              )}
             </Step>
 
             <Card>
@@ -309,6 +331,10 @@ export default function App() {
       </section>
 
       <footer className="mt-12 space-y-1 border-t pt-6 text-sm text-muted-foreground">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+          <span className="text-foreground">Free and open source. If it helped, leave a star.</span>
+          <StarButton />
+        </div>
         <p className="text-foreground">
           Made by{" "}
           <a href="https://github.com/dakshvasudev" target="_blank" rel="noopener" className="font-semibold underline underline-offset-4">Daksh Vasudev</a>{" "}
