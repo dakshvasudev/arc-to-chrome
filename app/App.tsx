@@ -398,7 +398,11 @@ export default function App() {
               <ol className="mt-4 ml-5 list-decimal space-y-1.5 text-sm text-muted-foreground">
                 <li>Switch Chrome to that profile (your profile picture, top right).</li>
                 <li>Go to <CopyText text="chrome://settings/importData" /></li>
-                <li>Choose <span className="font-medium text-foreground">Bookmarks HTML file</span> → <span className="font-medium text-foreground">Choose file</span> → pick that profile's file.</li>
+                <li>
+                  In the dropdown at the top (it shows another browser, like “Mozilla Firefox” or “Safari”), pick{" "}
+                  <span className="font-medium text-foreground">Bookmarks HTML File</span>. Don't press Import yet, or Chrome copies that browser's data.
+                </li>
+                <li>Click <span className="font-medium text-foreground">Choose file</span> and pick that profile's file.</li>
               </ol>
               {downloaded && (
                 <div className="mt-5 flex flex-wrap items-center gap-4 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4">

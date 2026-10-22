@@ -30,8 +30,9 @@ your folders, nesting and Favorites intact.
    Your actual profiles appear (names, colours, work badges), and spaces with matching names are
    routed automatically. The command only reads Chrome's profile list, using tools built into macOS
    and Windows.
-3. Download each file and, in that Chrome profile, open `chrome://settings/importData` and choose
-   **Bookmarks HTML file**.
+3. Download each file. In that Chrome profile open `chrome://settings/importData`, switch the
+   dropdown at the top (it shows another browser, like "Mozilla Firefox") to **Bookmarks HTML File**,
+   then click **Choose file** and pick the file.
 
 Want to see it first? The site has a **Try it with sample data** button.
 

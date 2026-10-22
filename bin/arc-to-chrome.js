@@ -227,7 +227,9 @@ function main() {
   console.log(`
 Import into each Chrome profile:
   1. Open Chrome in that profile and go to chrome://settings/importData
-  2. Choose "Bookmarks HTML file" → Choose file → pick that profile's file
+  2. In the dropdown at the top (it shows another browser, e.g. "Mozilla Firefox"),
+     pick "Bookmarks HTML File". Don't press Import before that.
+  3. Click "Choose file" and pick that profile's file
   Tip: run again with --open to have the import pages opened for you.
 `)
   if (opts.open) for (const w of written) if (w.target.dir) openImport(userData, w.target.dir, w.file)
