@@ -22,9 +22,14 @@ export function FileDrop({ title, hint, onFiles, compact }: Props) {
       onKeyDown={e => (e.key === "Enter" || e.key === " ") && input.current?.click()}
       onDragEnter={e => { e.preventDefault(); setOver(true) }}
       onDragOver={e => { e.preventDefault(); setOver(true) }}
-      onDragLeave={() => setOver(false)}
+      onDragLeave={e => {
+        // Ignore leave events fired when moving over the box's own children.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false)
+      }}
       onDrop={e => {
         e.preventDefault()
+        // Handled here; keep the page-wide drop target from handling it again.
+        e.stopPropagation()
         setOver(false)
         onFiles([...e.dataTransfer.files])
       }}

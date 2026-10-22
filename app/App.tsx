@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, Star } from "lucide-react"
+import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, Star, Upload } from "lucide-react"
 
 import { BookmarkTree } from "@/components/bookmark-tree"
 import { ChromeProfilesDialog } from "@/components/chrome-profiles-dialog"
@@ -77,6 +77,7 @@ export default function App() {
   const [error, setError] = useState("")
   const [chromeError, setChromeError] = useState("")
   const [downloaded, setDownloaded] = useState(false)
+  const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)) } catch {}
@@ -101,6 +102,33 @@ export default function App() {
     if (loaded) setAssign(defaultAssignment(loaded.spaces, next))
   }
 
+  // The whole page is a drop target: a near-miss shouldn't make the browser open the file instead.
+  useEffect(() => {
+    let depth = 0
+    const hasFiles = (e: DragEvent) => [...(e.dataTransfer?.types ?? [])].includes("Files")
+    const enter = (e: DragEvent) => { e.preventDefault(); depth++; if (hasFiles(e)) setDragging(true) }
+    const over = (e: DragEvent) => e.preventDefault()
+    const leave = () => { depth = Math.max(0, depth - 1); if (!depth) setDragging(false) }
+    // Capture phase runs before the drop box, which stops the event once it has handled it.
+    const reset = () => { depth = 0; setDragging(false) }
+    const drop = (e: DragEvent) => {
+      e.preventDefault()
+      onArcFiles([...(e.dataTransfer?.files ?? [])])
+    }
+    window.addEventListener("dragenter", enter)
+    window.addEventListener("dragover", over)
+    window.addEventListener("dragleave", leave)
+    window.addEventListener("drop", reset, true)
+    window.addEventListener("drop", drop)
+    return () => {
+      window.removeEventListener("drop", reset, true)
+      window.removeEventListener("dragenter", enter)
+      window.removeEventListener("dragover", over)
+      window.removeEventListener("dragleave", leave)
+      window.removeEventListener("drop", drop)
+    }
+  })
+
   async function readFiles(files: File[]) {
     const out: { kind: ReturnType<typeof classify>; text: string }[] = []
     for (const f of files) {
@@ -111,6 +139,11 @@ export default function App() {
   }
 
   async function onArcFiles(files: File[]) {
+    // Some apps (e.g. a browser's downloads list) drag a link, not the file itself.
+    if (!files.length) {
+      setError("Couldn't read a file from that drop. Drag the file from Finder, or click the box to choose it.")
+      return
+    }
     try {
       const read = await readFiles(files)
       const chrome = read.find(r => r.kind === "chrome")
@@ -161,6 +194,15 @@ export default function App() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+      {dragging && (
+        <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center bg-background/80 p-6 backdrop-blur-sm">
+          <div className="rounded-2xl border-2 border-dashed border-primary bg-card px-10 py-12 text-center shadow-lg">
+            <Upload className="mx-auto size-8 text-muted-foreground" />
+            <div className="mt-3 text-lg font-semibold">Drop it anywhere</div>
+            <div className="text-sm text-muted-foreground">Arc Data Export.md, StorableSidebar.json or Chrome's Local State</div>
+          </div>
+        </div>
+      )}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight sm:text-4xl">
           Arc <ArrowRight className="size-7 text-muted-foreground sm:size-8" /> Chrome
