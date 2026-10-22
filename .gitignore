@@ -1,0 +1,5 @@
+node_modules/
+arc-export/
+.DS_Store
+.tmp-*
+.vercel

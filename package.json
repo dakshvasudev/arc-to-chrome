@@ -1,0 +1,36 @@
+{
+  "name": "arc-to-chrome",
+  "version": "0.1.0",
+  "description": "Export Arc browser spaces, pinned tabs, favorites and extensions into a bookmarks file Chrome can import",
+  "type": "module",
+  "bin": {
+    "arc-to-chrome": "bin/arc-to-chrome.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "arc",
+    "chrome",
+    "bookmarks",
+    "migration",
+    "browser"
+  ],
+  "license": "MIT",
+  "author": "Daksh Vasudev (https://github.com/dakshvasudev)",
+  "homepage": "https://github.com/dakshvasudev/arc-to-chrome#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dakshvasudev/arc-to-chrome.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dakshvasudev/arc-to-chrome/issues"
+  }
+}
