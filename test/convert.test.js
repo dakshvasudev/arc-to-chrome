@@ -78,3 +78,22 @@ test('prettyTitle makes readable names from bare URLs', async () => {
   assert.equal(prettyTitle('https://www.japan-guide.com/e/e2164.html'), 'japan-guide.com')
   assert.equal(prettyTitle('not a url'), 'not a url')
 })
+
+test('parseChromeLocalState reads names, colours and order', async () => {
+  const { parseChromeLocalState, matchProfile } = await import('../src/convert.js')
+  const profiles = parseChromeLocalState({
+    profile: {
+      profiles_order: ['Profile 4', 'Default'],
+      info_cache: {
+        Default: { name: 'Personal', gaia_name: 'Sam Lee', profile_highlight_color: -13952472, is_managed: 0, hosted_domain: 'NO_HOSTED_DOMAIN' },
+        'Profile 4': { name: 'Work', is_managed: 1 },
+      },
+    },
+  })
+  assert.deepEqual(profiles.map(p => p.name), ['Work', 'Personal'])
+  assert.match(profiles[1].color, /^#[0-9a-f]{6}$/)
+  assert.equal(profiles[0].managed, true)
+  assert.equal(profiles[1].managed, false)
+  assert.equal(matchProfile({ title: 'personal', profileName: 'Default' }, profiles).name, 'Personal')
+  assert.equal(matchProfile({ title: 'Side project', profileName: 'Default' }, profiles).name, 'Work')
+})

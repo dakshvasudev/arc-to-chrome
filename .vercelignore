@@ -1,3 +1,5 @@
 test/
 bin/
 .tmp-*
+node_modules/
+dist/

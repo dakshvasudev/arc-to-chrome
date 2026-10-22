@@ -247,3 +247,40 @@ export function extensionsFolder(extensions) {
     extensions.map(e => link(e.name, `https://chromewebstore.google.com/detail/${e.id}`)),
   )
 }
+
+// Chromium stores colours as signed 32-bit ARGB integers.
+const argbToHex = n =>
+  typeof n === 'number' ? '#' + ((n >>> 0) & 0xffffff).toString(16).padStart(6, '0') : null
+
+/**
+ * Read Chrome's profiles from its "Local State" file, in Chrome's own order.
+ * @returns {Array<{dir, name, account, email, color, managed}>}
+ */
+export function parseChromeLocalState(localState) {
+  const cache = localState?.profile?.info_cache
+  if (!cache) throw new Error('Not a Chrome "Local State" file (no profiles found)')
+  const order = localState.profile.profiles_order ?? []
+  const dirs = [...order.filter(d => d in cache), ...Object.keys(cache).filter(d => !order.includes(d))]
+  return dirs.map(dir => {
+    const p = cache[dir]
+    return {
+      dir,
+      name: p.name || dir,
+      account: p.gaia_name || '',
+      email: p.user_name || '',
+      color: argbToHex(p.profile_highlight_color) ?? argbToHex(p.default_avatar_fill_color),
+      managed: Boolean(p.is_managed) || (p.hosted_domain && p.hosted_domain !== 'NO_HOSTED_DOMAIN'),
+    }
+  })
+}
+
+const norm = s => String(s ?? '').trim().toLowerCase()
+
+/** Chrome profile a space belongs in: same name as its Arc profile or the space, else the first one. */
+export function matchProfile(space, profiles) {
+  return (
+    profiles.find(p => norm(p.name) === norm(space.profileName)) ??
+    profiles.find(p => norm(p.name) === norm(space.title)) ??
+    profiles[0]
+  )
+}

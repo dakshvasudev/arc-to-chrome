@@ -1,5 +1,6 @@
 node_modules/
+dist/
 arc-export/
 .DS_Store
-.tmp-*
 .vercel
+.tmp-*

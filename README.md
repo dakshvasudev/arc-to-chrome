@@ -25,8 +25,9 @@ your folders, nesting and Favorites intact.
 ## Use it in 3 steps
 
 1. In Arc, open **Settings → Advanced → Export data**. Arc saves `Arc Data Export.md`.
-2. Drop it on **[arc-to-chrome.vercel.app](https://arc-to-chrome.vercel.app)** and choose which
-   Chrome profile each space goes to.
+2. Drop it on **[arc-to-chrome.vercel.app](https://arc-to-chrome.vercel.app)**. Click **Use my real
+   Chrome profiles** to see your actual profiles (names, colours, work badges), and spaces with
+   matching names are routed automatically. Change any of them with one click.
 3. Download each file and, in that Chrome profile, open `chrome://settings/importData` and choose
    **Bookmarks HTML file**.
 
@@ -88,12 +89,13 @@ it couldn't send your data anywhere even if it tried. The command line works ful
 ## Development
 
 ```sh
-npm test          # node --test, zero dependencies
-npx serve .       # run the web page locally (ES modules need http://)
+npm install
+npm run dev       # web app (Vite + React + Tailwind + shadcn/ui)
+npm test          # conversion tests, node --test
 ```
 
-`src/convert.js` holds all the conversion logic and is shared by the web page (`index.html`) and
-the CLI (`bin/arc-to-chrome.js`). Issues and PRs are welcome, especially for Windows paths and
+`src/convert.js` holds all the conversion logic as plain JavaScript and is shared by the web app
+(`app/`) and the zero-dependency CLI (`bin/arc-to-chrome.js`). Issues and PRs are welcome, especially for Windows paths and
 Arc item types that aren't handled yet.
 
 If this saved you an evening of copying links, a ⭐ helps other Arc users find it.
