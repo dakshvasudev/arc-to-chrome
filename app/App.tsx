@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, Star, Upload } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
 
 import { BookmarkTree } from "@/components/bookmark-tree"
 import { ChromeProfilesDialog } from "@/components/chrome-profiles-dialog"
@@ -78,6 +78,8 @@ export default function App() {
   const [chromeError, setChromeError] = useState("")
   const [downloaded, setDownloaded] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [sourceName, setSourceName] = useState("")
+  const replaceInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)) } catch {}
@@ -130,10 +132,10 @@ export default function App() {
   })
 
   async function readFiles(files: File[]) {
-    const out: { kind: ReturnType<typeof classify>; text: string }[] = []
+    const out: { kind: ReturnType<typeof classify>; text: string; name: string }[] = []
     for (const f of files) {
       const text = await f.text()
-      out.push({ kind: classify(text), text })
+      out.push({ kind: classify(text), text, name: f.name })
     }
     return out
   }
@@ -148,9 +150,12 @@ export default function App() {
       const read = await readFiles(files)
       const chrome = read.find(r => r.kind === "chrome")
       if (chrome) useProfiles(loadChromeProfiles(chrome.text))
-      const md = read.find(r => r.kind === "arc-md")?.text
-      const sidebar = read.find(r => r.kind === "arc-sidebar")?.text
-      if (md || sidebar) setArc(prev => ({ md: md ?? prev.md, sidebar: sidebar ?? prev.sidebar }))
+      const mdFile = read.find(r => r.kind === "arc-md")
+      const sidebarFile = read.find(r => r.kind === "arc-sidebar")
+      if (mdFile || sidebarFile) {
+        setArc(prev => ({ md: mdFile?.text ?? prev.md, sidebar: sidebarFile?.text ?? prev.sidebar }))
+        setSourceName([mdFile, sidebarFile].filter(Boolean).map(f => f!.name).join(" + "))
+      }
     } catch (e) {
       setError((e as Error).message)
     }
@@ -173,6 +178,7 @@ export default function App() {
   async function trySample() {
     const md = await (await fetch("/examples/sample-export.md")).text()
     setArc({ md, sidebar: null })
+    setSourceName("Sample data")
     setTimeout(() => document.getElementById("routing")?.scrollIntoView({ behavior: "smooth" }), 50)
   }
 
@@ -221,28 +227,41 @@ export default function App() {
         <Step
           n={1}
           title="Export from Arc"
-          description={<>In Arc, open <span className="font-medium text-foreground">Settings → Advanced → Export data</span>. Arc saves <span className="font-medium text-foreground">Arc Data Export.md</span>.</>}
+          description={loaded
+            ? "Loaded. To use a different file, click Replace or drop it anywhere on the page."
+            : <>In Arc, open <span className="font-medium text-foreground">Settings → Advanced → Export data</span>. Arc saves <span className="font-medium text-foreground">Arc Data Export.md</span>.</>}
         >
-          <FileDrop
-            title={loaded ? "Drop a different export" : "Drop “Arc Data Export.md” here"}
-            hint="or click to choose the file"
-            onFiles={onArcFiles}
-          />
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            {loaded ? (
-              <span className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary"><CircleCheck className="text-green-600" /> {loaded.rich ? "Arc sidebar data" : "Arc export"} loaded</Badge>
-                <Badge variant="outline">{plural(loaded.stats.links, "link")}</Badge>
-                <Badge variant="outline">{plural(loaded.stats.folders, "folder")}</Badge>
-                <Badge variant="outline">{plural(loaded.spaces.length, "space")}</Badge>
-              </span>
-            ) : (
-              <Button variant="link" className="h-auto p-0" onClick={trySample}>
+          {loaded ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 p-3">
+              <CircleCheck className="size-5 shrink-0 text-green-600" />
+              <div className="min-w-0 flex-1 basis-48">
+                <div className="truncate font-medium" title={sourceName}>{sourceName || "Arc export"}</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  <Badge variant="outline">{plural(loaded.stats.links, "link")}</Badge>
+                  <Badge variant="outline">{plural(loaded.stats.folders, "folder")}</Badge>
+                  <Badge variant="outline">{plural(loaded.spaces.length, "space")}</Badge>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => replaceInput.current?.click()}>
+                <RefreshCw /> Replace
+              </Button>
+              <input
+                ref={replaceInput}
+                type="file"
+                multiple
+                hidden
+                onChange={e => { onArcFiles([...(e.target.files ?? [])]); e.target.value = "" }}
+              />
+            </div>
+          ) : (
+            <>
+              <FileDrop title="Drop “Arc Data Export.md” here" hint="or click to choose the file" onFiles={onArcFiles} />
+              <Button variant="link" className="mt-3 h-auto p-0" onClick={trySample}>
                 <FlaskConical /> No export handy? Try it with sample data
               </Button>
-            )}
-          </div>
+            </>
+          )}
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
           <details className="mt-3 text-sm text-muted-foreground">
             <summary className="cursor-pointer select-none hover:text-foreground">Optional: keep the exact names you gave tabs</summary>
             <div className="mt-2 space-y-2 pl-4">
