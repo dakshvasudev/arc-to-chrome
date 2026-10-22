@@ -1,13 +1,14 @@
 import {
   barLayout,
   matchProfile,
+  parseBundle,
   parseChromeLocalState,
   parseMarkdown,
   parseSidebar,
   toNetscapeHTML,
 } from "../../src/convert.js"
 
-export type LinkNode = { type: "link"; title: string; url: string }
+export type LinkNode = { type: "link"; title: string; url: string; icon?: string }
 export type FolderNode = { type: "folder"; title: string; children: TreeNode[]; live?: boolean }
 export type TreeNode = LinkNode | FolderNode
 
@@ -33,7 +34,11 @@ export type Loaded = {
   spaces: Space[]
   stats: { links: number; folders: number; spaces: number }
   rich: boolean
+  /** Chrome profiles that came with the copy-command bundle. */
+  chromeProfiles: Profile[]
 }
+
+export type ArcSource = { md: string | null; sidebar: string | null; bundle: string | null }
 
 export const SKIP = "skip"
 
@@ -54,42 +59,54 @@ export function placeholderProfile(index: number): Profile {
   }
 }
 
-export type DroppedFile = { kind: "arc-md" | "arc-sidebar" | "chrome"; text: string }
+export type DroppedFile = { kind: "arc-md" | "arc-sidebar" | "chrome" | "bundle"; text: string }
 
 /** Work out what a dropped file is from its contents, not its name. */
 export function classify(text: string): DroppedFile["kind"] {
   const t = text.trimStart()
   if (!t.startsWith("{")) return "arc-md"
   const json = JSON.parse(t)
+  if (json?.arcToChrome) return "bundle"
   if (json?.profile?.info_cache || json?.info_cache) return "chrome"
   if (json?.sidebar?.containers) return "arc-sidebar"
   throw new Error("That JSON file isn't Arc's StorableSidebar.json or Chrome's Local State.")
 }
 
-export function loadArc(md: string | null, sidebar: string | null, includeUnpinned: boolean): Loaded {
-  const parsed = sidebar
-    ? parseSidebar(JSON.parse(sidebar), { includeUnpinned })
-    : parseMarkdown(md ?? "")
+export function loadArc(src: ArcSource, includeUnpinned: boolean): Loaded {
+  const opts = { includeUnpinned }
+  const parsed = src.bundle
+    ? parseBundle(JSON.parse(src.bundle), opts)
+    : src.sidebar
+      ? parseSidebar(JSON.parse(src.sidebar), opts)
+      : parseMarkdown(src.md ?? "")
   const spaces: Space[] = parsed.spaces.map((s: Omit<Space, "key" | "links">, i: number) => ({
     ...s,
     key: `s${i}`,
     links: countLinks(s.root),
   }))
-  if (!spaces.some(s => s.links)) throw new Error("No links found. Is this Arc's “Export data” file?")
-  return { spaces, stats: parsed.stats, rich: Boolean(sidebar) }
+  if (!spaces.some(s => s.links)) throw new Error("No links found. Is this Arc's data?")
+  return {
+    spaces,
+    stats: parsed.stats,
+    rich: Boolean(src.bundle || src.sidebar),
+    chromeProfiles: toProfiles("chromeProfiles" in parsed ? (parsed.chromeProfiles as RawProfile[]) : []),
+  }
 }
 
+type RawProfile = { name: string; account: string; color: string | null; managed: boolean }
+
+const toProfiles = (raw: RawProfile[]): Profile[] =>
+  raw.map((p, i) => ({
+    id: crypto.randomUUID(),
+    name: p.name,
+    account: p.account,
+    color: p.color ?? PALETTE[i % PALETTE.length],
+    managed: p.managed,
+    real: true,
+  }))
+
 export function loadChromeProfiles(text: string): Profile[] {
-  return parseChromeLocalState(JSON.parse(text.trim())).map(
-    (p: { name: string; account: string; color: string | null; managed: boolean }, i: number) => ({
-      id: crypto.randomUUID(),
-      name: p.name,
-      account: p.account,
-      color: p.color ?? PALETTE[i % PALETTE.length],
-      managed: p.managed,
-      real: true,
-    }),
-  )
+  return toProfiles(parseChromeLocalState(JSON.parse(text.trim())))
 }
 
 /** Default routing: empty spaces skipped, otherwise matched to a profile by name. */

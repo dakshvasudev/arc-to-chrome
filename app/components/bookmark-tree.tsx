@@ -92,12 +92,16 @@ export function BookmarkTree({ spaces, excluded, onToggleExcluded }: Props) {
               <li key={path}>
                 <a href={n.url} target="_blank" rel="noopener noreferrer" title={n.url} className={row}>
                   <span className="w-4 shrink-0" />
-                  <span
-                    className="grid size-4.5 shrink-0 place-items-center rounded-[5px] text-[0.6rem] font-bold text-white uppercase"
-                    style={{ background: `hsl(${hue(d)} 55% 48%)` }}
-                  >
-                    {d[0] ?? "?"}
-                  </span>
+                  {n.icon ? (
+                    <img src={n.icon} alt="" className="size-4.5 shrink-0 rounded-[3px]" />
+                  ) : (
+                    <span
+                      className="grid size-4.5 shrink-0 place-items-center rounded-[5px] text-[0.6rem] font-bold text-white uppercase"
+                      style={{ background: `hsl(${hue(d)} 55% 48%)` }}
+                    >
+                      {d[0] ?? "?"}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1 truncate"><Highlight text={n.title} q={q} /></span>
                   <span className="hidden max-w-[40%] shrink-0 truncate text-xs text-muted-foreground sm:block">{d}</span>
                 </a>

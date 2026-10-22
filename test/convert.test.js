@@ -115,5 +115,22 @@ test('live folders are detected and the layout is flat', async () => {
   assert.equal(work.children.find(c => c.title === 'Pull Requests').live, true)
   assert.equal(work.children.find(c => c.title === 'Docs').live, undefined)
   const layout = barLayout([withoutLive(work), side])
-  assert.deepEqual(layout.map(n => n.title), ['linear.app', 'Docs', 'Side'])
+  assert.deepEqual(layout.map(n => n.title), ['Favorites', 'Docs', 'Side'])
+})
+
+test('bundle carries real names, icons and Chrome profiles into the HTML', async () => {
+  const { parseBundle, toNetscapeHTML, barLayout } = await import('../src/convert.js')
+  const icon = 'data:image/png;base64,iVBORw0KGgo='
+  const parsed = parseBundle({
+    arcToChrome: 1,
+    arcSidebar: sidebar,
+    icons: { t2: icon },
+    arcProfiles: { info_cache: { Default: { name: 'Personal' } } },
+    chromeProfiles: { profiles_order: ['Default'], info_cache: { Default: { name: 'Personal' } } },
+  })
+  assert.equal(parsed.chromeProfiles[0].name, 'Personal')
+  assert.equal(parsed.spaces[0].profileName, 'Personal')
+  const html = toNetscapeHTML(barLayout([parsed.spaces[0].root]), { addDate: 1 })
+  assert.match(html, /HREF="https:\/\/b\.example" ADD_DATE="1" ICON="data:image\/png;base64,iVBORw0KGgo=">Saved t2</)
+  assert.match(html, /<H3 ADD_DATE="1">Favorites<\/H3>/)
 })

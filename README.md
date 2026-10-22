@@ -24,15 +24,22 @@ your folders, nesting and Favorites intact.
 
 ## Use it in 3 steps
 
-1. In Arc, open **Settings → Advanced → Export data**. Arc saves `Arc Data Export.md`.
-2. Drop it on **[arc-to-chrome.vercel.app](https://arc-to-chrome.vercel.app)**. Click **Use my real
-   Chrome profiles**, copy the one-line command, run it in Terminal and press ⌘V back on the page.
-   Your actual profiles appear (names, colours, work badges), and spaces with matching names are
-   routed automatically. The command only reads Chrome's profile list, using tools built into macOS
-   and Windows.
-3. Download each file. In that Chrome profile open `chrome://settings/importData`, switch the
-   dropdown at the top (it shows another browser, like "Mozilla Firefox") to **Bookmarks HTML File**,
-   then click **Choose file** and pick the file.
+1. On **[arc-to-chrome.vercel.app](https://arc-to-chrome.vercel.app)**, copy the one-line command and
+   run it in Terminal:
+   ```sh
+   curl -fsSL https://arc-to-chrome.vercel.app/copy.pl | perl
+   ```
+   It copies your Arc sidebar (real tab names, folders, icons) and your Chrome profile list to the
+   clipboard. It's [read-only](public/copy.pl), uses only what ships with macOS, and sends nothing
+   anywhere.
+2. Press ⌘V on the page. Spaces are routed to Chrome profiles with matching names; change any with
+   one click, and untick folders you don't want.
+3. Download each profile's file. In that Chrome profile open `chrome://settings/importData`, switch
+   the dropdown at the top (it shows another browser, like "Mozilla Firefox") to **Bookmarks HTML
+   File**, then click **Choose file** and pick the file.
+
+No Terminal? Drop the file from Arc's **Settings → Advanced → Export data** instead. It only has
+links, so bookmarks get names generated from them and no icons.
 
 Want to see it first? The site has a **Try it with sample data** button.
 
@@ -44,14 +51,8 @@ Want to see it first? The site has a **Try it with sample data** button.
 | Favorites | Bookmarks right on the bar |
 | Pinned tabs and folders | Bookmarks and folders, with the same nesting |
 | Live folders (e.g. GitHub PRs) | Left out by default, since Arc refills them itself (tick them in the preview to keep a snapshot) |
-| Renamed tabs | Your custom names, if you also drop `StorableSidebar.json` (see below) |
+| Tab names and icons | Your names exactly as in Arc, with each site's icon |
 | Extensions | A folder of Chrome Web Store links to reinstall them (command line only) |
-
-Arc's Markdown export only contains URLs, so bookmarks get readable names generated from each link
-(`Google Sheet · 1BxiMV`, `next.js PR #1482`, `news.ycombinator.com › submit`).
-
-**Keep your exact tab names:** also drop `StorableSidebar.json`. In Finder press `⌘ ⇧ G`, paste
-`~/Library/Application Support/Arc/`, and use that file (not the dated backups next to it).
 
 **Passwords:** export them from `arc://settings/passwords` as CSV, import that file at
 `chrome://password-manager/settings`, then delete the CSV.

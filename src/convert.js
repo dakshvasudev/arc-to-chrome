@@ -6,7 +6,7 @@
 //   { type: 'link', title, url }
 
 const folder = (title, children = []) => ({ type: 'folder', title, children })
-const link = (title, url) => ({ type: 'link', title: title || prettyTitle(url), url })
+const link = (title, url, icon) => ({ type: 'link', title: title || prettyTitle(url), url, ...(icon && { icon }) })
 
 const KNOWN_PAGES = [
   [/^docs\.google\.com\/spreadsheets/, 'Google Sheet'],
@@ -70,10 +70,11 @@ function itemTitle(item) {
  * @param {object} [opts]
  * @param {Record<string,string>} [opts.profileNames]  'Profile 2' → 'Work'
  * @param {boolean} [opts.includeUnpinned=true]  include open (Today) tabs
+ * @param {Record<string,string>} [opts.icons]  sidebar item id → favicon data URL
  * @returns {{ spaces: Array<{title, profileDir, profileName, root}>, stats }}
  */
 export function parseSidebar(sidebarJson, opts = {}) {
-  const { profileNames = {}, includeUnpinned = true } = opts
+  const { profileNames = {}, includeUnpinned = true, icons = {} } = opts
   const container = sidebarJson?.sidebar?.containers?.find(c => c.spaces && c.items)
   if (!container) throw new Error('Not an Arc StorableSidebar.json (no spaces found)')
 
@@ -91,7 +92,7 @@ export function parseSidebar(sidebarJson, opts = {}) {
       const tab = item.data?.tab
       if (tab) {
         if (!tab.savedURL) continue
-        out.push(link(itemTitle(item), tab.savedURL))
+        out.push(link(itemTitle(item), tab.savedURL, icons[item.id]))
         stats.links++
       } else if (item.data?.list) {
         const f = folder(item.title || 'Folder', convertChildren(item.childrenIds, seen))
@@ -220,18 +221,27 @@ export const withoutLive = node => prune(node, n => n.type === 'folder' && n.liv
 /**
  * Lay spaces out the way Chrome's importer works best. Chrome puts the file's top level
  * straight onto an empty bookmarks bar (or into one "Imported" folder if the bar has
- * bookmarks), so the first space's Favorites become bar links and its folders sit next
- * to them; any further spaces become folders of their own.
+ * bookmarks), so the first space's own folder is dropped and its Favorites and folders
+ * sit at the top; any further spaces become folders of their own.
  */
 export function barLayout(spaceRoots) {
   const [first, ...rest] = spaceRoots
-  if (!first) return []
-  const top = []
-  for (const c of first.children) {
-    if (c.type === 'folder' && c.title === 'Favorites') top.push(...c.children)
-    else top.push(c)
+  return first ? [...first.children, ...rest] : []
+}
+
+/**
+ * Parse what copy.pl puts on the clipboard: Arc's sidebar, its icons and both browsers'
+ * profile lists.
+ */
+export function parseBundle(bundle, opts = {}) {
+  if (!bundle?.arcToChrome || !bundle.arcSidebar) throw new Error('Not an arc-to-chrome bundle')
+  const arcNames = {}
+  for (const [dir, p] of Object.entries(bundle.arcProfiles?.info_cache ?? {})) arcNames[dir] = p.name
+  const parsed = parseSidebar(bundle.arcSidebar, { ...opts, profileNames: arcNames, icons: bundle.icons ?? {} })
+  return {
+    ...parsed,
+    chromeProfiles: bundle.chromeProfiles ? parseChromeLocalState(bundle.chromeProfiles) : [],
   }
-  return [...top, ...rest]
 }
 
 const esc = s =>
@@ -259,7 +269,9 @@ export function toNetscapeHTML(nodes, { addDate = Math.floor(Date.now() / 1000) 
         walk(n.children, indent + 1)
         lines.push(`${pad}</DL><p>`)
       } else {
-        lines.push(`${pad}<DT><A HREF="${esc(n.url)}" ADD_DATE="${addDate}">${esc(n.title)}</A>`)
+        // Chrome's importer stores ICON data URLs as the bookmark's favicon.
+        const icon = n.icon?.startsWith('data:image/') ? ` ICON="${n.icon}"` : ''
+        lines.push(`${pad}<DT><A HREF="${esc(n.url)}" ADD_DATE="${addDate}"${icon}>${esc(n.title)}</A>`)
       }
     }
   }

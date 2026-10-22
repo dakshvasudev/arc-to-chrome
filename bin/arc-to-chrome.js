@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import {
   parseSidebar,
   parseMarkdown,
@@ -122,6 +123,22 @@ function readExtensions(profilePath) {
   return out
 }
 
+// Arc caches each sidebar item's favicon as a PNG named after the MD5 of the item's id.
+function readIcons(arcDir, sidebar) {
+  const icons = {}
+  for (const c of sidebar?.sidebar?.containers ?? []) {
+    for (const item of c.items ?? []) {
+      if (!item?.data?.tab) continue
+      const file = path.join(arcDir, 'SidebarItemsFaviconCache', createHash('md5').update(item.id).digest('hex'))
+      try {
+        const png = fs.readFileSync(file)
+        if (png.length <= 64 * 1024) icons[item.id] = `data:image/png;base64,${png.toString('base64')}`
+      } catch {}
+    }
+  }
+  return icons
+}
+
 const countLinks = n => (n.type === 'link' ? 1 : n.children.reduce((s, c) => s + countLinks(c), 0))
 
 /**
@@ -181,9 +198,11 @@ function main() {
     }
     arcUserData = path.join(arcDir, 'User Data')
     const arcNames = Object.fromEntries(readProfiles(arcUserData).map(p => [p.dir, p.name]))
-    parsed = parseSidebar(readJSON(path.join(arcDir, 'StorableSidebar.json')), {
+    const sidebar = readJSON(path.join(arcDir, 'StorableSidebar.json'))
+    parsed = parseSidebar(sidebar, {
       profileNames: arcNames,
       includeUnpinned: opts.unpinned,
+      icons: readIcons(arcDir, sidebar),
     })
   }
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowRight, CircleCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
+import { ArrowRight, CircleCheck, ClipboardPaste, ShieldCheck, Download, FlaskConical, KeyRound, Lock, RefreshCw, Star, Upload } from "lucide-react"
 
 import { BookmarkTree } from "@/components/bookmark-tree"
 import { ChromeProfilesDialog } from "@/components/chrome-profiles-dialog"
+import { CommandBox } from "@/components/command-box"
 import { CopyText } from "@/components/copy-text"
 import { FileDrop } from "@/components/file-drop"
 import { AddProfileCard, ProfileAvatar, ProfileCard } from "@/components/profile-card"
@@ -23,12 +24,15 @@ import {
   loadChromeProfiles,
   placeholderProfile,
   plural,
+  type ArcSource,
   type Loaded,
   type Profile,
 } from "@/lib/model"
 import { cn } from "@/lib/utils"
 
 const REPO = "https://github.com/dakshvasudev/arc-to-chrome"
+const COPY_COMMAND = "curl -fsSL https://arc-to-chrome.vercel.app/copy.pl | perl"
+const isWindows = typeof navigator !== "undefined" && /Win/.test(navigator.platform)
 const PROFILES_KEY = "arc-to-chrome:profiles"
 
 function savedProfiles(): Profile[] {
@@ -71,7 +75,7 @@ function Step({ n, title, description, action, children }: {
 }
 
 export default function App() {
-  const [arc, setArc] = useState<{ md: string | null; sidebar: string | null }>({ md: null, sidebar: null })
+  const [arc, setArc] = useState<ArcSource>({ md: null, sidebar: null, bundle: null })
   const [includeUnpinned, setIncludeUnpinned] = useState(true)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>(savedProfiles)
@@ -90,13 +94,16 @@ export default function App() {
 
   // Re-parse whenever the Arc input changes, and route spaces from scratch.
   useEffect(() => {
-    if (!arc.md && !arc.sidebar) return
+    if (!arc.md && !arc.sidebar && !arc.bundle) return
     try {
-      const next = loadArc(arc.md, arc.sidebar, includeUnpinned)
+      const next = loadArc(arc, includeUnpinned)
       const live = liveFolderPaths(next.spaces)
+      // The copy command brings the real Chrome profiles along.
+      const targets = next.chromeProfiles.length ? next.chromeProfiles : profiles
+      if (next.chromeProfiles.length) setProfiles(targets)
       setLoaded(next)
       setExcluded(live)
-      setAssign(defaultAssignment(applyExclusions(next.spaces, live), profiles))
+      setAssign(defaultAssignment(applyExclusions(next.spaces, live), targets))
       setError("")
     } catch (e) {
       setError((e as Error).message)
@@ -136,6 +143,40 @@ export default function App() {
     }
   })
 
+  // ⌘V anywhere on the page loads what the copy command put on the clipboard.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData("text") ?? ""
+      const target = e.target as HTMLElement | null
+      if (target?.closest("input, textarea")) return
+      try {
+        if (classify(text) !== "bundle") return
+      } catch {
+        return
+      }
+      e.preventDefault()
+      loadBundle(text)
+    }
+    window.addEventListener("paste", onPaste)
+    return () => window.removeEventListener("paste", onPaste)
+  })
+
+  function loadBundle(text: string) {
+    setArc({ md: null, sidebar: null, bundle: text })
+    setSourceName("Your Arc sidebar")
+    setError("")
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (classify(text) === "bundle") return loadBundle(text)
+      setError("The clipboard doesn't hold the command's output yet. Run the command, then paste.")
+    } catch {
+      setError("Your browser blocked reading the clipboard. Press ⌘V instead.")
+    }
+  }
+
   async function readFiles(files: File[]) {
     const out: { kind: ReturnType<typeof classify>; text: string; name: string }[] = []
     for (const f of files) {
@@ -155,10 +196,12 @@ export default function App() {
       const read = await readFiles(files)
       const chrome = read.find(r => r.kind === "chrome")
       if (chrome) useProfiles(loadChromeProfiles(chrome.text))
+      const bundleFile = read.find(r => r.kind === "bundle")
+      if (bundleFile) return loadBundle(bundleFile.text)
       const mdFile = read.find(r => r.kind === "arc-md")
       const sidebarFile = read.find(r => r.kind === "arc-sidebar")
       if (mdFile || sidebarFile) {
-        setArc(prev => ({ md: mdFile?.text ?? prev.md, sidebar: sidebarFile?.text ?? prev.sidebar }))
+        setArc(prev => ({ md: mdFile?.text ?? prev.md, sidebar: sidebarFile?.text ?? prev.sidebar, bundle: null }))
         setSourceName([mdFile, sidebarFile].filter(Boolean).map(f => f!.name).join(" + "))
       }
     } catch (e) {
@@ -193,7 +236,7 @@ export default function App() {
 
   async function trySample() {
     const md = await (await fetch("/examples/sample-export.md")).text()
-    setArc({ md, sidebar: null })
+    setArc({ md, sidebar: null, bundle: null })
     setSourceName("Sample data")
     setTimeout(() => document.getElementById("routing")?.scrollIntoView({ behavior: "smooth" }), 50)
   }
@@ -243,10 +286,12 @@ export default function App() {
       <div className="mt-8 space-y-4">
         <Step
           n={1}
-          title="Export from Arc"
+          title="Get your Arc data"
           description={loaded
-            ? "Loaded. To use a different file, click Replace or drop it anywhere on the page."
-            : <>In Arc, open <span className="font-medium text-foreground">Settings → Advanced → Export data</span>. Arc saves <span className="font-medium text-foreground">Arc Data Export.md</span>.</>}
+            ? "Loaded. To use different data, paste again, click Replace or drop a file anywhere on the page."
+            : isWindows
+              ? <>In Arc, open <span className="font-medium text-foreground">Settings → Advanced → Export data</span>, then drop the file it saves.</>
+              : "Copies your spaces, real tab names and icons straight from Arc, plus your Chrome profiles."}
         >
           {loaded ? (
             <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 p-3">
@@ -272,9 +317,44 @@ export default function App() {
             </div>
           ) : (
             <>
-              <FileDrop title="Drop “Arc Data Export.md” here" hint="or click to choose the file" onFiles={onArcFiles} />
+              {isWindows ? (
+                <FileDrop title="Drop “Arc Data Export.md” here" hint="or click to choose the file" onFiles={onArcFiles} />
+              ) : (
+                <>
+                  <ol className="space-y-4 text-sm">
+                    <li className="space-y-2">
+                      <div><span className="font-semibold">1.</span> Copy this command</div>
+                      <CommandBox command={COPY_COMMAND} />
+                    </li>
+                    <li>
+                      <span className="font-semibold">2.</span> Open <span className="font-medium">Terminal</span> (⌘ Space, type “Terminal”), paste it and press Return.
+                    </li>
+                    <li className="flex flex-wrap items-center gap-3">
+                      <span><span className="font-semibold">3.</span> Come back and press <kbd className="rounded border px-1.5 font-mono text-xs">⌘ V</kbd></span>
+                      <Button variant="outline" size="sm" onClick={pasteFromClipboard}><ClipboardPaste /> Paste</Button>
+                    </li>
+                  </ol>
+                  <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="size-4 shrink-0" />
+                    <span>
+                      Read-only and open source (<a href="/copy.pl" target="_blank" rel="noopener" className="underline underline-offset-2">see what it does</a>).
+                      It changes nothing and sends nothing anywhere; your data only goes to your clipboard and this page.
+                    </span>
+                  </p>
+                  <details className="mt-4 text-sm text-muted-foreground">
+                    <summary className="cursor-pointer select-none hover:text-foreground">Prefer not to use Terminal? Drop Arc's export file instead</summary>
+                    <div className="mt-3 space-y-3">
+                      <p>
+                        In Arc, open <span className="font-medium text-foreground">Settings → Advanced → Export data</span> and drop the file here.
+                        That file only has links, so bookmarks get names made from each link and no icons.
+                      </p>
+                      <FileDrop compact title="Drop “Arc Data Export.md” here" hint="or click to choose the file" onFiles={onArcFiles} />
+                    </div>
+                  </details>
+                </>
+              )}
               <Button variant="link" className="mt-3 h-auto p-0" onClick={trySample}>
-                <FlaskConical /> No export handy? Try it with sample data
+                <FlaskConical /> Just looking? Try it with sample data
               </Button>
             </>
           )}
@@ -300,21 +380,12 @@ export default function App() {
               />
             </div>
           )}
-          <details className="mt-3 text-sm text-muted-foreground">
-            <summary className="cursor-pointer select-none hover:text-foreground">Optional: keep the exact names you gave tabs</summary>
-            <div className="mt-2 space-y-2 pl-4">
-              <p>
-                Arc's export only has URLs, so bookmarks get readable names made from each link. To keep your own tab
-                names, also drop <span className="font-medium text-foreground">StorableSidebar.json</span> from{" "}
-                <CopyText text="~/Library/Application Support/Arc/" /> (press ⌘ ⇧ G in Finder; use the file without a
-                date in its name).
-              </p>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={includeUnpinned} onChange={e => setIncludeUnpinned(e.target.checked)} />
-                Include open (unpinned) tabs from that file
-              </label>
-            </div>
-          </details>
+          {loaded?.rich && (
+            <label className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" checked={includeUnpinned} onChange={e => setIncludeUnpinned(e.target.checked)} className="accent-primary" />
+              Include open (unpinned) tabs
+            </label>
+          )}
         </Step>
 
         {loaded && (
@@ -422,7 +493,7 @@ export default function App() {
 
       <section className="mt-12 space-y-3 text-sm text-muted-foreground">
         <h2 className="text-base font-semibold text-foreground">Good to know</h2>
-        <p>Each space becomes a bookmark folder with its Favorites, pinned tabs and nested folders. Chrome puts imports in an “Imported” folder on the bookmarks bar.</p>
+        <p>Bookmarks keep your Arc names, icons and folders. In each Chrome profile, the first space's Favorites folder and folders land on the bookmarks bar, and any extra spaces become folders. If the bar already has bookmarks, Chrome wraps the import in one “Imported” folder.</p>
         <p className="flex gap-2">
           <KeyRound className="mt-0.5 size-4 shrink-0" />
           <span>Passwords: export them from <CopyText text="arc://settings/passwords" /> as CSV, import at <CopyText text="chrome://password-manager/settings" />, then delete the CSV.</span>
