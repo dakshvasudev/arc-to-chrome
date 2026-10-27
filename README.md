@@ -54,8 +54,10 @@ Want to see it first? The site has a **Try it with sample data** button.
 | Tab names and icons | Your names exactly as in Arc, with each site's icon |
 | Extensions | A folder of Chrome Web Store links to reinstall them (command line only) |
 
-**Passwords:** export them from `arc://settings/passwords` as CSV, import that file at
-`chrome://password-manager/settings`, then delete the CSV.
+**Passwords:** in Arc open `arc://password-manager/settings` and click **Export passwords** (Arc asks
+for your Mac password and saves a CSV). In Chrome open `chrome://password-manager/settings`, click
+**Import passwords** and choose that file. Then delete the CSV, since it holds your passwords in plain
+text.
 
 Not carried over: history, Boosts, Easels and Notes.
 

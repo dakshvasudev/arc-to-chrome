@@ -22,7 +22,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What about live folders, passwords and extensions?",
-    a: "Live folders such as GitHub pull requests are left out by default because Arc refills them. Passwords can be exported from arc://settings/passwords as a CSV and imported in Chrome's password manager. The command-line version also lists your Arc extensions with Chrome Web Store links.",
+    a: "Live folders such as GitHub pull requests are left out by default because Arc refills them. Passwords: in Arc open arc://password-manager/settings and click Export passwords, then in Chrome open chrome://password-manager/settings and click Import passwords. Delete the CSV afterwards. The command-line version also lists your Arc extensions with Chrome Web Store links.",
   },
   {
     q: "Does it work on Windows?",

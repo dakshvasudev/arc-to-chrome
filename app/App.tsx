@@ -497,7 +497,11 @@ export default function App() {
         <p>Bookmarks keep your Arc names, icons and folders. In each Chrome profile, the first space's Favorites folder and folders land on the bookmarks bar, and any extra spaces become folders. If the bar already has bookmarks, Chrome wraps the import in one “Imported” folder.</p>
         <p className="flex gap-2">
           <KeyRound className="mt-0.5 size-4 shrink-0" />
-          <span>Passwords: export them from <CopyText text="arc://settings/passwords" /> as CSV, import at <CopyText text="chrome://password-manager/settings" />, then delete the CSV.</span>
+          <span>
+            Passwords: in Arc open <CopyText text="arc://password-manager/settings" /> and click <span className="font-medium text-foreground">Export passwords</span>.
+            Then in Chrome open <CopyText text="chrome://password-manager/settings" />, click <span className="font-medium text-foreground">Import passwords</span> and pick that file.
+            Delete the file afterwards, since it holds your passwords in plain text.
+          </span>
         </p>
       </section>
 
