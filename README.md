@@ -14,7 +14,7 @@ Free, open source, and private: it runs in your browser and nothing is uploaded.
 
 ## Why
 
-Arc is no longer being actively developed, and plenty of us are heading back to Chrome. Chrome
+Arc stops working on 22 December 2026, and plenty of us are heading back to Chrome. Chrome
 can't import from Arc, and Arc's own export is a Markdown file that Chrome doesn't understand.
 If you organised your life into spaces (Personal, Work, a side project), you also don't want them
 all dumped into one profile.
@@ -94,20 +94,50 @@ Arc space            →  Chrome profile
 ## Privacy
 
 The web page is static HTML and JavaScript. Your file is read in the browser and turned into a
-download on the spot. The site's Content Security Policy blocks requests to any other server, so
-it couldn't send your data anywhere even if it tried. The command line works fully offline.
+download on the spot. The site's Content Security Policy blocks requests to every other server
+except PostHog's ingest hosts, which receive only the anonymous usage counts below. The command
+line works fully offline.
+
+**Usage counting:** the site counts page views and completed migrations with anonymous events (no cookies, no stored id, no bookmarks, names or file contents), and sends nothing if your browser has Do Not Track or Global Privacy Control on.
+
+## How it is measured
+
+A **user** is one completed migration: a visit that downloads at least one Chrome bookmarks file
+from real Arc data (not the sample). The page sends four anonymous events to PostHog when the site
+is built with `VITE_POSTHOG_KEY` set:
+
+| Event | When | Properties |
+| --- | --- | --- |
+| `$pageview` | Page load | `ref` (from `?ref=hn`, `reddit`, `alt`, `li`, `x`, `forum`, else `other`), referring domain |
+| `data_pasted` | The copy command's output is pasted | `source` |
+| `export_file_dropped` | An Arc export file is dropped or chosen | `source` (`md`, `sidebar`, `bundle`) |
+| `profile_file_downloaded` | A profile's bookmarks file is downloaded | `source`, `spaces`, `links` (counts), `first_in_session` |
+
+Users = `profile_file_downloaded` where `first_in_session = true` and `source != sample`.
+Each page load gets a random id kept only in memory, so visits can't be linked and PostHog builds no
+person profiles. The exact payload is built in [`src/analytics.js`](src/analytics.js).
+
+Current numbers: not measured yet (tracking ships with this change).
 
 ## Development
 
 ```sh
 npm install
 npm run dev       # web app (Vite + React + Tailwind + shadcn/ui)
-npm test          # conversion tests, node --test
+npm test          # conversion and analytics tests, node --test
 ```
+
+Optional: copy `.env.example` to `.env.local` and set `VITE_POSTHOG_KEY` to count usage. Without it
+the page sends nothing.
 
 `src/convert.js` holds all the conversion logic as plain JavaScript and is shared by the web app
 (`app/`) and the zero-dependency CLI (`bin/arc-to-chrome.js`). Issues and PRs are welcome, especially for Windows paths and
 Arc item types that aren't handled yet.
+
+## Roadmap
+
+- Measure completed migrations and where visitors come from (this release).
+- Fix whatever doesn't carry over for people who report it before 22 December.
 
 If this saved you an evening of copying links, a ⭐ helps other Arc users find it.
 

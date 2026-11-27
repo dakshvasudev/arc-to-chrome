@@ -1,6 +1,10 @@
 // Shown on the page and emitted as FAQPage structured data at build time, so the two match.
 export const FAQ: { q: string; a: string }[] = [
   {
+    q: "Arc browser is shutting down. How do I move to Chrome?",
+    a: "Arc stops working on 22 December 2026. Before then, copy the command on this page, run it in Terminal on your Mac and press ⌘V here (or drop Arc's export file). Each Arc space becomes a bookmarks file for the Chrome profile you choose, with folders, Favorites, tab names and icons kept. Import each file at chrome://settings/importData. Export your passwords from Arc separately, as described above.",
+  },
+  {
     q: "How do I export my bookmarks from Arc to Chrome?",
     a: "On a Mac, copy the one-line command on this page, run it in Terminal and press ⌘V here. Your Arc spaces, folders, tab names and icons load instantly. Choose which Chrome profile each space goes to, download the file, then in Chrome open chrome://settings/importData, pick “Bookmarks HTML File” in the dropdown and choose the file.",
   },
@@ -18,7 +22,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Is it safe? Is my data uploaded anywhere?",
-    a: "Nothing is uploaded. The page runs entirely in your browser, and the copy command only reads Arc's and Chrome's files and puts the result on your clipboard. It's open source, so you can read exactly what it does.",
+    a: "Nothing is uploaded. The page runs entirely in your browser, and the copy command only reads Arc's and Chrome's files and puts the result on your clipboard. It's open source, so you can read exactly what it does. The page only counts anonymous visits and downloads (no cookies, none of your data), and sends nothing if your browser has Do Not Track on.",
   },
   {
     q: "What about live folders, passwords and extensions?",
