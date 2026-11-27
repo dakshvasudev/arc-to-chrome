@@ -2,6 +2,7 @@ import { StrictMode } from "react"
 import { createRoot, hydrateRoot } from "react-dom/client"
 
 import App from "./App"
+import { trackPageview } from "@/lib/analytics"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./index.css"
 
@@ -22,3 +23,5 @@ const app = (
 const root = document.getElementById("root")!
 if (root.hasChildNodes()) hydrateRoot(root, app)
 else createRoot(root).render(app)
+
+trackPageview()

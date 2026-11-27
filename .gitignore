@@ -5,3 +5,5 @@ arc-export/
 .vercel
 .tmp-*
 dist-ssr/
+.env
+.env*.local

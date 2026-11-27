@@ -29,6 +29,7 @@ import {
   type Profile,
 } from "@/lib/model"
 import { FAQ } from "@/lib/faq"
+import { trackDownload, trackFileDropped, trackPasted } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 
 const REPO = "https://github.com/dakshvasudev/arc-to-chrome"
@@ -86,6 +87,8 @@ export default function App() {
   const [downloaded, setDownloaded] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [sourceName, setSourceName] = useState("")
+  // Where the Arc data came from, sent with events so sample-data downloads aren't counted as users.
+  const [source, setSource] = useState<"bundle" | "md" | "sidebar" | "sample">("bundle")
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const replaceInput = useRef<HTMLInputElement>(null)
 
@@ -157,6 +160,7 @@ export default function App() {
       }
       e.preventDefault()
       loadBundle(text)
+      trackPasted()
     }
     window.addEventListener("paste", onPaste)
     return () => window.removeEventListener("paste", onPaste)
@@ -165,13 +169,18 @@ export default function App() {
   function loadBundle(text: string) {
     setArc({ md: null, sidebar: null, bundle: text })
     setSourceName("Your Arc sidebar")
+    setSource("bundle")
     setError("")
   }
 
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText()
-      if (classify(text) === "bundle") return loadBundle(text)
+      if (classify(text) === "bundle") {
+        loadBundle(text)
+        trackPasted()
+        return
+      }
       setError("The clipboard doesn't hold the command's output yet. Run the command, then paste.")
     } catch {
       setError("Your browser blocked reading the clipboard. Press ⌘V instead.")
@@ -198,12 +207,19 @@ export default function App() {
       const chrome = read.find(r => r.kind === "chrome")
       if (chrome) useProfiles(loadChromeProfiles(chrome.text))
       const bundleFile = read.find(r => r.kind === "bundle")
-      if (bundleFile) return loadBundle(bundleFile.text)
+      if (bundleFile) {
+        loadBundle(bundleFile.text)
+        trackFileDropped("bundle")
+        return
+      }
       const mdFile = read.find(r => r.kind === "arc-md")
       const sidebarFile = read.find(r => r.kind === "arc-sidebar")
       if (mdFile || sidebarFile) {
         setArc(prev => ({ md: mdFile?.text ?? prev.md, sidebar: sidebarFile?.text ?? prev.sidebar, bundle: null }))
         setSourceName([mdFile, sidebarFile].filter(Boolean).map(f => f!.name).join(" + "))
+        const kind = sidebarFile ? "sidebar" : "md"
+        setSource(kind)
+        trackFileDropped(kind)
       }
     } catch (e) {
       setError((e as Error).message)
@@ -239,6 +255,7 @@ export default function App() {
     const md = await (await fetch("/examples/sample-export.md")).text()
     setArc({ md, sidebar: null, bundle: null })
     setSourceName("Sample data")
+    setSource("sample")
     setTimeout(() => document.getElementById("routing")?.scrollIntoView({ behavior: "smooth" }), 50)
   }
 
@@ -276,9 +293,11 @@ export default function App() {
         </h1>
         <StarButton size="lg" />
       </header>
-      <p className="mt-3 max-w-2xl text-pretty text-muted-foreground">
-        Move your Arc spaces, pinned tabs, folders and favorites into Chrome, and send each space to the right
-        Chrome profile.
+      <p className="mt-3 max-w-2xl text-pretty font-medium">
+        Arc stops working on 22 December 2026. Move each space to its own Chrome profile in about a minute.
+      </p>
+      <p className="mt-2 max-w-2xl text-pretty text-muted-foreground">
+        Your pinned tabs, folders and favorites come along, and each space goes to the Chrome profile you pick.
       </p>
       <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Lock className="size-3.5" /> Runs entirely in your browser. Nothing is uploaded.
@@ -460,7 +479,11 @@ export default function App() {
                           {spaces.length ? `${spaces.map(s => s.title).join(", ")} · ${plural(linksFor(p.id), "link")}` : "No spaces assigned"}
                         </div>
                       </div>
-                      <Button disabled={!spaces.length} onClick={() => { download(fileName(p.name), bookmarksHTML(spaces)); setDownloaded(true) }}>
+                      <Button disabled={!spaces.length} onClick={() => {
+                        download(fileName(p.name), bookmarksHTML(spaces))
+                        setDownloaded(true)
+                        trackDownload(source, spaces.length, linksFor(p.id))
+                      }}>
                         <Download /> Download
                       </Button>
                     </div>
